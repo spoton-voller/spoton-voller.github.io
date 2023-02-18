@@ -2576,7 +2576,8 @@
             
             
         </ol></div></div>
-<div class="draggable podchart flexrow"><div class="structure row"><div><div class="tile L1"><div class="text-2">hospitality</div></div>
+
+<div class="podchart draggable"><div class="structure row"><div class="structure row"><div><div class="tile L1"><div class="text-2">hospitality</div></div>
             <div class="structure row"><div class="structure column"><div class="tile L2"><div class="text-2">monroe</div></div>
         <div class="structure row"></div></div>
 
@@ -3132,7 +3133,7 @@
 <div class="tile qa"><div class="text-1">mazur</div>
         
         
-            <div class="text-2">QA Engineer</div></div></div></div></div></div></div></div></div></div></div>
+            <div class="text-2">QA Engineer</div></div></div></div></div></div></div></div></div></div></div></div>
 <div class="remote-pane"><div class="logo-container"></div>
     <div class="icon-container"><i id="menu-tree"       class="hover fa-solid fa-sitemap"></i>
         <i id="menu-pods"       class="hover fa-solid fa-people-group"></i>
@@ -3149,73 +3150,82 @@
     window.onload = function ()
     {
         const LEFT_MOUSE_BUTTON = 1;
-var canvas = document.getElementsByClassName("draggable")[0];
-var SCALE = 1;
-var IS_DRAGGING = false;
-var pointX = 0;
-var pointY = 0;
-var startX = 0
-var startY = 0;
 
-function transform()
+function initDragDropAndZoom(canvas)
 {
-    canvas.style.transform = `translate(${ pointX }px, ${ pointY }px) scale(${ SCALE })`;
+    var IS_DRAGGING = false;
+    var SCALE = 1;
+    var pointX = 0;
+    var pointY = 0;
+    var startX = 0
+    var startY = 0;
+    
+    function transform()
+    {
+        canvas.style.transform = `translate(${ pointX }px, ${ pointY }px) scale(${ SCALE })`;
+    }
+
+    canvas.addEventListener("mousedown", function (e)
+    {
+        e.preventDefault();
+
+        if (e.which != LEFT_MOUSE_BUTTON) return;
+            
+        startX = e.clientX - pointX;
+        startY = e.clientY - pointY;
+            
+        canvas.style.cursor = "grabbing";
+        canvas.style.userSelect = "none";
+
+        IS_DRAGGING = true;
+    });
+
+    canvas.addEventListener("mouseup", function (e)
+    {
+        if (e.which != LEFT_MOUSE_BUTTON) return;
+            
+        canvas.style.cursor = "move";
+        IS_DRAGGING = false;
+    });
+
+    canvas.addEventListener("mousemove", function (e)
+    {
+        e.preventDefault();
+
+        if (!IS_DRAGGING) return;
+            
+        pointX = (e.clientX - startX);
+        pointY = (e.clientY - startY);
+        transform();
+    });
+
+    canvas.addEventListener("wheel", function (e)
+    {
+        e.preventDefault();
+
+        var SPEED = 1.2;
+        var MAX = 4;
+        var MIN = 0.05;
+        var xs = (e.clientX - pointX) / SCALE;
+        var ys = (e.clientY - pointY) / SCALE;
+        var delta = (e.wheelDelta ? e.wheelDelta : -e.deltaY);
+        var attemptedScale = (delta > 0) ? SCALE * SPEED : SCALE / SPEED;
+
+        if (attemptedScale < MIN || attemptedScale > MAX) return;
+
+        SCALE = attemptedScale;
+        pointX = e.clientX - xs * SCALE;
+        pointY = e.clientY - ys * SCALE;
+
+        transform();
+    });
 }
 
-canvas.addEventListener("mousedown", function (e)
+var canvases = document.getElementsByClassName("draggable");
+for (var index = 0; index < canvases.length; index++)
 {
-    e.preventDefault();
-
-    if (e.which != LEFT_MOUSE_BUTTON) return;
-        
-    startX = e.clientX - pointX;
-    startY = e.clientY - pointY;
-        
-    canvas.style.cursor = "grabbing";
-    canvas.style.userSelect = "none";
-
-    IS_DRAGGING = true;
-});
-
-canvas.addEventListener("mouseup", function (e)
-{
-    if (e.which != LEFT_MOUSE_BUTTON) return;
-        
-    canvas.style.cursor = "move";
-    IS_DRAGGING = false;
-});
-
-canvas.addEventListener("mousemove", function (e)
-{
-    e.preventDefault();
-
-    if (!IS_DRAGGING) return;
-        
-    pointX = (e.clientX - startX);
-    pointY = (e.clientY - startY);
-    transform();
-});
-
-canvas.addEventListener("wheel", function (e)
-{
-    e.preventDefault();
-
-    var SPEED = 1.2;
-    var MAX = 4;
-    var MIN = 0.05;
-    var xs = (e.clientX - pointX) / SCALE;
-    var ys = (e.clientY - pointY) / SCALE;
-    var delta = (e.wheelDelta ? e.wheelDelta : -e.deltaY);
-    var attemptedScale = (delta > 0) ? SCALE * SPEED : SCALE / SPEED;
-
-    if (attemptedScale < MIN || attemptedScale > MAX) return;
-
-    SCALE = attemptedScale;
-    pointX = e.clientX - xs * SCALE;
-    pointY = e.clientY - ys * SCALE;
-
-    transform();
-});
+    initDragDropAndZoom(canvases[index]);
+}
         const cards = document.getElementsByClassName("card");
 for (var index = 0; index < cards.length; index++)
 {
@@ -3248,7 +3258,7 @@ document.getElementById("menu-tree").addEventListener("click", function()
 document.getElementById("menu-pods").addEventListener("click", function()
 {
     orgChart.style.display = "none";
-    podChart.style.display = "flex";
+    podChart.style.display = "block";
 });
     }
 </script></body>
