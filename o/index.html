@@ -7104,10 +7104,10 @@ const initDragWindow = function (canvasUniqueClassName, domIdTogoToOnInitializat
         const baselineX = -1 * (targetX - viewportCenterX);
         const targetY = targetBounds.top;
         const padding = 20;
-        const baselineY = 1- (targetY - padding);
+        const baselineY = -1 * (targetY - padding);
 
-        dragWindow.pointX = baselineX;
-        dragWindow.pointY = baselineY;
+        dragWindow.pointX = baselineX + dragWindow.pointX;
+        dragWindow.pointY = baselineY + dragWindow.pointY;
         dragWindow.isDragging = false;
         dragWindow.transform();
     }
@@ -7243,12 +7243,8 @@ const search = (searchText) =>
     if (previousSearch == searchText) return;
     previousSearch = searchText
 
-    if (!searchText)
-    {
-        searchResults.innerHTML = "";
-    }
+    searchResults.innerHTML = "";
 
-    let searchOptions = "";
     let matchCount = 0;
     const MAX_MATCH_COUNT = 5;
 
@@ -7259,16 +7255,21 @@ const search = (searchText) =>
             || (node.title && node.title.includes(searchText)))
         {
             matchCount++;
-            searchOptions += `
-                <a href="#${ node.key }">
-                    <span class="text-1">${ node.name }</span>
-                    <span class="text-2">${ node.title }</span>
-                </a>
-            `;
+
+            const result = document.createElement("div");
+
+            result.innerHTML = `
+                <span class="text-1">${ node.name }</span>
+                <span class="text-2">${ node.title }</span>`
+
+            result.addEventListener("click", function(event)
+            {
+                ORGCHART.goto(node.key);
+            });
+
+            searchResults.appendChild(result);
         }
     }
-
-    searchResults.innerHTML = searchOptions;
 };
 
 document.getElementById("search").addEventListener("keyup", function (event)
