@@ -7039,83 +7039,148 @@
 <script>
     window.onload = function ()
     {
-        const LEFT_MOUSE_BUTTON = 1;
-
-function initDragDropAndZoom(canvas)
+        
+const DRAG_WINDOW_CONSTS =
 {
-    var IS_DRAGGING = false;
-    var SCALE = 1;
-    var pointX = 0;
-    var pointY = 0;
-    var startX = 0
-    var startY = 0;
-    
-    function transform()
+    LEFT_MOUSE_BUTTON: 1,
+                SPEED: 1.2,
+            SCALE_MAX: 4,
+            SCALE_MIN: 0.05,
+        DEFAULT_SCALE: 1
+};
+
+const initDragWindow = function (canvasUniqueClassName, domIdTogoToOnInitialization)
+{
+    const domElements = document.getElementsByClassName(canvasUniqueClassName);
+    if (!domElements || domElements.length == 0)
     {
-        canvas.style.transform = `translate(${ pointX }px, ${ pointY }px) scale(${ SCALE })`;
+        console.error(`FAILED TO INIT DRAG WINDOW FOR: .${ canvasUniqueClassName }`);
+        return;
     }
 
-    canvas.addEventListener("mousedown", function (e)
+    if (domElements.length > 1)
+    {
+        console.warn(`INIT DRAG WINDOW LOCATED MULTIPLE POSSIBILITIES FOR .${ canvasUniqueClassName }. ONLY THE FIRST WAS INIT'd.`);
+    }
+    
+    const dragWindow =
+    {
+        isDragging: false,
+             scale: DRAG_WINDOW_CONSTS.DEFAULT_SCALE,
+            pointX: 0,
+            pointY: 0,
+            startX: 0,
+            startY: 0,
+            canvas: domElements[0]
+    };
+
+    dragWindow.transform = function ()
+    { 
+        const x = `[X:${ dragWindow.pointX }]`;
+        const y = `[Y:${ dragWindow.pointY }]`;
+        const z = `[Z:${ dragWindow.scale }]`;
+        console.log(`TRANSFORM ${ x } ${ y } ${ z }`);
+        
+        dragWindow.canvas.style.transform = `translate(${ dragWindow.pointX }px, ${ dragWindow.pointY }px) scale(${ dragWindow.scale })`;
+    }
+
+    dragWindow.goto = function (domId)
+    {
+        const failedGoTo = function ()
+        {
+            console.error(`FAILED DragWindow.GoTo FOR: #${ domId }`);
+        }
+        
+        if (!domId) return failedGoTo();
+
+        const target = dragWindow.canvas.querySelector(`#${ domId }`)
+        if (!target) return failedGoTo();
+
+        const targetBounds = target.getBoundingClientRect();
+        const targetX = targetBounds.left + ((targetBounds.right - targetBounds.left) / 2);
+        const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        const controlWidth = 350;
+        const viewportCenterX = controlWidth + ((viewportWidth - controlWidth) / 2);
+        const baselineX = -1 * (targetX - viewportCenterX);
+        const targetY = targetBounds.top;
+        const padding = 20;
+        const baselineY = 1- (targetY - padding);
+
+        dragWindow.pointX = baselineX;
+        dragWindow.pointY = baselineY;
+        dragWindow.isDragging = false;
+        dragWindow.transform();
+    }
+
+    dragWindow.canvas.addEventListener("mousedown", function (e)
     {
         e.preventDefault();
 
-        if (e.which != LEFT_MOUSE_BUTTON) return;
+        if (e.which != DRAG_WINDOW_CONSTS.LEFT_MOUSE_BUTTON) return;
             
-        startX = e.clientX - pointX;
-        startY = e.clientY - pointY;
+        dragWindow.startX = e.clientX - dragWindow.pointX;
+        dragWindow.startY = e.clientY - dragWindow.pointY;
             
-        canvas.style.cursor = "grabbing";
-        canvas.style.userSelect = "none";
+        dragWindow.canvas.style.cursor = "grabbing";
+        dragWindow.canvas.style.userSelect = "none";
 
-        IS_DRAGGING = true;
+        dragWindow.isDragging = true;
     });
 
-    canvas.addEventListener("mouseup", function (e)
+    dragWindow.canvas.addEventListener("mouseup", function (e)
     {
-        if (e.which != LEFT_MOUSE_BUTTON) return;
+        if (e.which != DRAG_WINDOW_CONSTS.LEFT_MOUSE_BUTTON) return;
             
-        canvas.style.cursor = "move";
-        IS_DRAGGING = false;
+        dragWindow.canvas.style.cursor = "move";
+        dragWindow.isDragging = false;
     });
 
-    canvas.addEventListener("mousemove", function (e)
-    {
-        e.preventDefault();
-
-        if (!IS_DRAGGING) return;
-            
-        pointX = (e.clientX - startX);
-        pointY = (e.clientY - startY);
-        transform();
-    });
-
-    canvas.addEventListener("wheel", function (e)
+    dragWindow.canvas.addEventListener("mousemove", function (e)
     {
         e.preventDefault();
 
-        var SPEED = 1.2;
-        var MAX = 4;
-        var MIN = 0.05;
-        var xs = (e.clientX - pointX) / SCALE;
-        var ys = (e.clientY - pointY) / SCALE;
-        var delta = (e.wheelDelta ? e.wheelDelta : -e.deltaY);
-        var attemptedScale = (delta > 0) ? SCALE * SPEED : SCALE / SPEED;
+        if (!dragWindow.isDragging) return;
+            
+        dragWindow.pointX = (e.clientX - dragWindow.startX);
+        dragWindow.pointY = (e.clientY - dragWindow.startY);
 
-        if (attemptedScale < MIN || attemptedScale > MAX) return;
-
-        SCALE = attemptedScale;
-        pointX = e.clientX - xs * SCALE;
-        pointY = e.clientY - ys * SCALE;
-
-        transform();
+        dragWindow.transform();
     });
+
+    dragWindow.canvas.addEventListener("wheel", function (e)
+    {
+        e.preventDefault();
+
+        const xs = (e.clientX - dragWindow.pointX) / dragWindow.scale;
+        const ys = (e.clientY - dragWindow.pointY) / dragWindow.scale;
+        const delta = e.wheelDelta
+            ? e.wheelDelta
+            : -e.deltaY;
+        const attemptedScale = (delta > 0)
+            ? dragWindow.scale * DRAG_WINDOW_CONSTS.SPEED
+            : dragWindow.scale / DRAG_WINDOW_CONSTS.SPEED;
+        const tooSmall = attemptedScale < DRAG_WINDOW_CONSTS.SCALE_MIN;
+        const tooBig = attemptedScale > DRAG_WINDOW_CONSTS.SCALE_MAX;
+
+        if (tooSmall || tooBig) return;
+
+        dragWindow.scale = attemptedScale;
+        dragWindow.pointX = e.clientX - xs * dragWindow.scale;
+        dragWindow.pointY = e.clientY - ys * dragWindow.scale;
+
+        dragWindow.transform();
+    });
+
+    if (domIdTogoToOnInitialization)
+    {
+        dragWindow.goto(domIdTogoToOnInitialization);
+    }
+    
+    return dragWindow;
 }
 
-var canvases = document.getElementsByClassName("draggable");
-for (var index = 0; index < canvases.length; index++)
-{
-    initDragDropAndZoom(canvases[index]);
-}
+const ORGCHART = initDragWindow("orgchart", "sapp");
+const PODCHART = initDragWindow("podchart");
         const cards = document.getElementsByClassName("card");
 for (var index = 0; index < cards.length; index++)
 {
