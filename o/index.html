@@ -7270,6 +7270,11 @@ const search = (searchText) =>
             searchResults.appendChild(result);
         }
     }
+
+    if (matchCount == 1)
+    {
+        searchResults.querySelector(`div`).click();
+    }
 };
 
 document.getElementById("search").addEventListener("keyup", function (event)
