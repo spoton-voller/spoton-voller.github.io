@@ -7022,11 +7022,11 @@
         <i id="menu-pods"       class="hover fa-solid fa-people-group"></i>
         <!-- <i id="menu-calendar"   class="hover fa-solid fa-calendar"></i> --></div>
 
-    <input id="search" type="text" class="text-1" autocomplete="off" maxlength="20"/>
+    <div id="search-container"><input id="search" type="text" class="text-1" autocomplete="off" maxlength="20"/>
 
-    <div class="search-label text-2">search</div>
-    
-    <div id="search-results"></div>
+        <div class="search-label text-2">search</div>
+        
+        <div id="search-results"></div></div>
 
     <div class="details-container"><!--
         <span class="label">Name</span>
@@ -7037,10 +7037,10 @@
         --></div></div>
 
 <script>
+    let APP;
     window.onload = function ()
     {
-        
-const DRAG_WINDOW_CONSTS =
+        const DRAG_WINDOW_CONSTS =
 {
     LEFT_MOUSE_BUTTON: 1,
                 SPEED: 1.2,
@@ -7179,8 +7179,25 @@ const initDragWindow = function (canvasUniqueClassName, domIdTogoToOnInitializat
     return dragWindow;
 }
 
-const ORGCHART = initDragWindow("orgchart", "sapp");
-const PODCHART = initDragWindow("podchart");
+
+        
+        APP =
+        {
+            views: 
+            {
+                orgchart: initDragWindow("orgchart", "sapp"),
+                podchart: initDragWindow("podchart")
+            },
+            search:
+            {
+                container: document.getElementById("search-container"),
+                input: document.getElementById("search"),
+                results: document.getElementById("search-results"),
+                
+                previous: null
+            }
+        };
+        
         const cards = document.getElementsByClassName("card");
 for (var index = 0; index < cards.length; index++)
 {
@@ -7201,19 +7218,37 @@ for (var index = 0; index < cards.length; index++)
         }
     });
 }
-        const orgChart = document.getElementsByClassName("orgchart").item(0);
-const podChart = document.getElementsByClassName("podchart").item(0);
-
-document.getElementById("menu-tree").addEventListener("click", function()
+        APP.cviews =
 {
-    orgChart.style.display = "block";
-    podChart.style.display = "none";
+    org:
+    [
+        APP.views.orgchart.canvas,
+        APP.search.container
+    ],
+    pod:
+    [
+        APP.views.podchart.canvas
+    ]
+};
+
+const showDomElement = function(element, show)
+{
+    const value = show ? "block" : "none";
+    element.style.display = value;
+}
+
+document.getElementById("menu-tree").addEventListener("click", () =>
+{
+    APP.cviews.org.forEach((x) => showDomElement(x, true));
+    APP.cviews.pod.forEach((x) => showDomElement(x, false));
+
+    APP.search.input.value = "";
 });
 
-document.getElementById("menu-pods").addEventListener("click", function()
+document.getElementById("menu-pods").addEventListener("click", () =>
 {
-    orgChart.style.display = "none";
-    podChart.style.display = "block";
+    APP.cviews.org.forEach((x) => showDomElement(x, false));
+    APP.cviews.pod.forEach((x) => showDomElement(x, true));
 });
         const debounce = (func, wait) =>
 {
@@ -7232,18 +7267,16 @@ document.getElementById("menu-pods").addEventListener("click", function()
     };
 };
 
-const searchResults = document.getElementById("search-results");
-let previousSearch;
 const search = (searchText) =>
 {
     if (!NODES) return;
 
     searchText = searchText.toLowerCase() || null;
     
-    if (previousSearch == searchText) return;
-    previousSearch = searchText
+    if (APP.search.previous == searchText) return;
+    APP.search.previous = searchText
 
-    searchResults.innerHTML = "";
+    APP.search.results.innerHTML = "";
 
     let matchCount = 0;
     const MAX_MATCH_COUNT = 5;
@@ -7264,20 +7297,20 @@ const search = (searchText) =>
 
             result.addEventListener("click", function(event)
             {
-                ORGCHART.goto(node.key);
+                APP.views.orgchart.goto(node.key);
             });
 
-            searchResults.appendChild(result);
+            APP.search.results.appendChild(result);
         }
     }
 
     if (matchCount == 1)
     {
-        searchResults.querySelector(`div`).click();
+        APP.search.results.querySelector(`div`).click();
     }
 };
 
-document.getElementById("search").addEventListener("keyup", function (event)
+APP.search.input.addEventListener("keyup", function (event)
 {
     const waitInMiliseconds = 400;
     debounce(search(event.target.value), waitInMiliseconds);
