@@ -7076,11 +7076,6 @@ const initDragWindow = function (canvasUniqueClassName, domIdTogoToOnInitializat
 
     dragWindow.transform = function ()
     { 
-        const x = `[X:${ dragWindow.pointX }]`;
-        const y = `[Y:${ dragWindow.pointY }]`;
-        const z = `[Z:${ dragWindow.scale }]`;
-        console.log(`TRANSFORM ${ x } ${ y } ${ z }`);
-        
         dragWindow.canvas.style.transform = `translate(${ dragWindow.pointX }px, ${ dragWindow.pointY }px) scale(${ dragWindow.scale })`;
     }
 
