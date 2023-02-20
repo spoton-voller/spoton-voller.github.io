@@ -7272,39 +7272,69 @@ const search = (searchText) =>
     if (!NODES) return;
 
     searchText = searchText.toLowerCase() || null;
-    
     if (APP.search.previous == searchText) return;
-    APP.search.previous = searchText
 
+    APP.search.previous = searchText
     APP.search.results.innerHTML = "";
 
-    let matchCount = 0;
     const MAX_MATCH_COUNT = 5;
+    const matchKeys = [];
 
-    for (var index = 0; index < NODES.length && matchCount < MAX_MATCH_COUNT; index++)
+    const onMatch = function (node)
     {
-        const node = NODES[index];
-        if ((node.name && node.name.includes(searchText))
-            || (node.title && node.title.includes(searchText)))
+        if (matchKeys.includes(node.key))
         {
-            matchCount++;
-
-            const result = document.createElement("div");
-
-            result.innerHTML = `
-                <span class="text-1">${ node.name }</span>
-                <span class="text-2">${ node.title }</span>`
-
-            result.addEventListener("click", function(event)
-            {
-                APP.views.orgchart.goto(node.key);
-            });
-
-            APP.search.results.appendChild(result);
+            return;
         }
+        else
+        {
+            matchKeys.push(node.key);
+        }
+
+        const result = document.createElement("div");
+
+        result.innerHTML = `
+            <span class="text-1">${ node.name }</span>
+            <span class="text-2">${ node.title }</span>`
+
+        result.addEventListener("click", function(event)
+        {
+            APP.views.orgchart.goto(node.key);
+        });
+
+        APP.search.results.appendChild(result);
     }
 
-    if (matchCount == 1)
+    const loop = function (condition)
+    {
+        for (var index = 0; index < NODES.length && matchKeys.length < MAX_MATCH_COUNT; index++)
+        {
+            const node = NODES[index];
+            if (condition(node))
+            {
+                onMatch(node);
+            }
+        }
+    }
+    
+    loop((node) =>
+    {
+        if (!node.name) return false;
+
+        const names = node.name.split(" ");
+        for (var index = 0; index < names.length; index++)
+        {
+            var name = names[index];
+            if (name.startsWith(searchText)) return true;
+        }
+
+        return false;
+    });
+
+    loop((node) => { return node.name && node.name.includes(searchText); });
+    loop((node) => { return node.title && node.title.includes(searchText); });
+
+    if (matchKeys.length == 1)
     {
         APP.search.results.querySelector(`div`).click();
     }
